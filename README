@@ -1,0 +1,7 @@
+This is my first attempt at an actors library developed for the Yeti language.
+The project will use maven (with yeti plugin) for build and tests.
+
+Examples will follow later.
+
+The expected library should provide just a few simple APIs to make it
+simple and straightforward to work with.
