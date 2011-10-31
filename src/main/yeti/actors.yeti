@@ -1,0 +1,58 @@
+/// Actors library
+
+module actors;
+
+import actors.Actors;
+
+/// Basically, the actors library is made of only a few public types and functions:
+typedef t_message = 'a;
+typedef t_actor = number;
+typedef t_receive = t_message -> ()
+typedef t_init = () -> ()
+
+//TODO extend API to provide a supervisor function?
+
+/// Attach an actor to the current thread (needed to bootstrap the whole actors system)
+/// This is the only function that can be called outside any actor.
+/// It must be called exactly once.
+/// This function is blocking and never returns!
+bootstrap init receive is t_init -> t_receive -> () = 
+	Actors#bootstrap(init, receive);
+
+/// Create a new actor with its own thread
+newActor receive is t_receive -> t_actor =
+	Actors#newActor(receive);
+
+/// Attach an actor to the EDT thread
+newEdtActor receive is t_receive -> t_actor = 
+	Actors#newEdtActor(receive);
+
+reply message is t_message -> () = 
+	Actors#reply(message);
+
+/// Send a message to an actor asynchroneously
+(!) actor message is t_actor -> t_message -> () = 
+	Actors#send(actor, message);
+
+/// Return the id of the current actor calling this method
+self () is () -> t_actor = 
+	Actors#self();
+
+/// Return the id of the actor that sent the currently processed message
+source () is () -> t_actor = 
+	Actors#source();
+
+changeReceiver receive is t_receive -> () = 
+	Actors#changeReceiver(receive);
+
+// Only the following API is exported
+{
+	bootstrap,
+	newActor,
+//	newEdtActor,
+	(!),
+	self,
+	reply,
+	source,
+	changeReceiver
+}

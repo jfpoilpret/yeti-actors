@@ -1,0 +1,61 @@
+module actors.actorstests;
+
+{bootstrap, newActor, (!), self, reply, source, changeReceiver} = load actors;
+
+class EndLoopException(String message) extends Exception(message)
+end;
+
+var msgs = array [];
+
+record value is 'a -> () =
+	push msgs "\(value)";
+
+check values =
+	(results = map2 (==) msgs values;
+	 if any (== false) results then
+		 println "expected: \(values)\nactual:   \(msgs)";
+		 failWith "expected \(values)\nactual:   \(msgs)"
+	 fi);
+
+var i = 1;
+
+initialize () = 
+	(println "self = \(self ())";
+	 println "before sending something to self";
+	 record "-M#\(i)";
+	 recipient = self ();
+	 recipient ! "M#\(i)";
+	 record "+M#\(i)";
+	 println "after sending something to self");
+
+receive message =
+	(println "just received \(message) from \(source ())"; 
+	 record "=\(message)";
+	 if i <= 5 then
+		 println "before replying something to self";
+		 record "-R#\(i)";
+		 reply "R#\(i)";
+		 record "+R#\(i)";
+		 println "after replying something to self";
+	 else
+		 println "leaving the endless loop with an exception";
+		 throw new EndLoopException("leave endless loop")
+	 fi;
+	 i := i + 1);
+
+//TODO this dhould be part of the test1 function (not executed at module load time!)
+
+test1 () = 
+	(msgs := array [];
+	 try
+		 bootstrap initialize receive;
+	 catch EndLoopException:
+	 yrt;
+	 check ["-M#1", "+M#1", "=M#1", 
+			"-R#1", "+R#1", "=R#1", 
+			"-R#2", "+R#2", "=R#2", 
+			"-R#3", "+R#3", "=R#3", 
+			"-R#4", "+R#4", "=R#4", 
+			"-R#5", "+R#5", "=R#5"]);
+
+["checkBootstrap": test1]

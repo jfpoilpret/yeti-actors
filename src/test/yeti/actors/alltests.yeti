@@ -1,0 +1,13 @@
+module actors.alltests;
+
+{suiteFromModule} = load yeti.testutils;
+load yeti.assertions;
+
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+
+class ActorsTest extends TestCase
+	static TestSuite suite()
+		suiteFromModule load actors.actorstests
+end
+

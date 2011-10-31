@@ -1,0 +1,15 @@
+module yeti.utils;
+
+{evaluateYetiCode = eval} = load yeti.lang.compiler.eval;
+
+class YetiHelper
+	Object evaluate(String expr)
+		case eval [] [] expr of
+			{result = Result obj}:			obj is ~Object;
+			{result = CompileException ex}:	throw (ex is ~yeti.lang.compiler.CompileException);
+			{result = Exception ex}:		throw (ex is ~java.lang.Throwable);
+			{str}:							throw new RuntimeException(string str);
+		esac,
+end;
+
+1
