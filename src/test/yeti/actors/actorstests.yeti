@@ -48,7 +48,7 @@ receive message =
 test1 () = 
 	(msgs := array [];
 	 try
-		 bootstrap initialize receive;
+		 bootstrap {init = initialize, receive = receive};
 	 catch EndLoopException:
 	 yrt;
 	 check ["-M#1", "+M#1", "=M#1", 

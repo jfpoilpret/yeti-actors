@@ -19,7 +19,7 @@ import yeti.lang.Fun;
 interface Actor
 {
 	public void start();
-//	public void stop();
+	public void stop();
 	public long id();
 	public void changeReceiver(Fun receive);
 	public void send(Actor target, Object message);

@@ -7,20 +7,27 @@ import yeti.lang.Fun;
 
 abstract class AbstractActor implements Actor
 {
-	protected AbstractActor(long id, Fun receiver)
+	protected AbstractActor(long id, Fun init, Fun receiver)
 	{
 		_id = id;
+		_init = init;
 		_receiver = receiver;
 	}
 	
 	final protected void eventLoop()
 	{
+		callInit();
 		//TODO don't we ever stop looping forever?
-		while (true)
+		while (!_stop)
 		{
 			try
 			{
-				_current = _queue.take();
+				MessageInfo message = _queue.take();
+				if (message.message == STOP)
+				{
+					break;
+				}
+				_current = message;
 				callReceiver();
 			}
 			catch (InterruptedException e)
@@ -28,6 +35,20 @@ abstract class AbstractActor implements Actor
 				//FIXME what to do if this occurs?
 				e.printStackTrace();
 			}
+		}
+	}
+
+	protected void callInit()
+	{
+		Actors.setId(this);
+		try
+		{
+			_init.apply(null);
+		}
+		catch (RuntimeException e)
+		{
+			//FIXME what to do if this occurs?
+			e.printStackTrace();
 		}
 	}
 
@@ -48,6 +69,13 @@ abstract class AbstractActor implements Actor
 	{
 		return _id;
 	}
+	
+	@Override public void stop()
+	{
+		_stop = true;
+		_queue.clear();
+		_queue.add(new MessageInfo(null, STOP));
+	}
 
 	@Override final public void changeReceiver(Fun receive)
 	{
@@ -63,6 +91,10 @@ abstract class AbstractActor implements Actor
 
 	@Override final public void push(Actor source, Object message)
 	{
+		if (_stop)
+		{
+			throw new IllegalStateException("TODO");
+		}
 		_queue.add(new MessageInfo(source, message));
 	}
 
@@ -98,8 +130,11 @@ abstract class AbstractActor implements Actor
 		final private Object message;
 	}
 
+	static final private Object STOP = new Object();
 	protected final long _id;
 	private final BlockingQueue<MessageInfo> _queue = new LinkedBlockingQueue<MessageInfo>();
+	private Fun _init;
 	private Fun _receiver;
+	private boolean _stop = false;
 	private MessageInfo _current = null;
 }

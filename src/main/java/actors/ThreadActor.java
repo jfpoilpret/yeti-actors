@@ -19,9 +19,9 @@ import yeti.lang.Fun;
 
 class ThreadActor extends AbstractActor
 {
-	ThreadActor(long id, Fun receiver)
+	ThreadActor(long id, Fun init, Fun receiver)
 	{
-		super(id, receiver);
+		super(id, init, receiver);
 		_thread = new Thread()
 		{
 			@Override public void run()
@@ -33,7 +33,6 @@ class ThreadActor extends AbstractActor
 
 	@Override public void start()
 	{
-		Actors.setId(this);
 		_thread.start();
 	}
 	

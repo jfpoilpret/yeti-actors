@@ -1,0 +1,63 @@
+program actors.fact1;
+
+// Import actors API
+{bootstrap, shutdown, newActor, (!), self, reply, source, changeReceiver} = load actors;
+
+// Simple factorial function (with tail recursion in order to cope with big numbers)
+fact =
+	(f acc x =
+	 if x == 0 then
+		 acc
+	 else
+		 f (acc * x) (x - 1)
+	 fi) 1;
+
+// Create an actor performing some lengthy function (factorial)
+makeActor index = newActor {
+		init () = println "Performer #\(index) started.",
+		receive num = println "\(index) finished calculation of !\(num) = \(fact num)"
+	};
+
+// User input functions
+console = {
+	inRange x range =
+		if contains? x range then x else failWith "not in range" fi,
+		
+	error line =
+		(println "Error! `\(line)` is not one of:\n\t\"stop\"\n\tnumber\n\tindex number";
+		 println "where index must be a number between 1 and 10";
+		 input ()),
+		
+	input () =
+		(print "> ";
+		 line = readln ();
+		 try
+			 case strSplit " " line of
+				["stop"]:	Stop ();
+				[x, y]:		Input {id = inRange (number x) [1..10], num = number y};
+				[""]:		error line;
+				[x]:		Input {id = 1 + randomInt 10, num = number x};
+				_:			error line;
+			 esac
+		 catch Exception:
+		 	error line;
+		 yrt)
+};
+
+// bootstrap actor: manages user input and dispatch request to one of existing actors
+boot = {
+	var actors = array [],
+	
+	init () = 
+		(actors := array (map makeActor [1..10]);
+		 self () ! Start ()),
+
+	receive message = case message of
+		Start _:			self() ! (console.input ());
+		Stop _:				(println "Finished!"; shutdown ());
+		Input {id, num}:	(actors.[id - 1] ! num; self() ! (console.input ()));
+		esac
+	};
+
+// start system
+bootstrap boot

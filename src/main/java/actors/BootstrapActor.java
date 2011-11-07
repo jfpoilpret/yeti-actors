@@ -7,15 +7,12 @@ final class BootstrapActor extends AbstractActor
 {
 	BootstrapActor(long id, Fun init, Fun receiver)
 	{
-		super(id, receiver);
+		super(id, init, receiver);
 		_thread = Thread.currentThread();
-		_init = init;
 	}
 	
 	@Override public void start()
 	{
-		Actors.setId(this);
-		_init.apply(null);
 		eventLoop();
 	}
 
@@ -26,5 +23,4 @@ final class BootstrapActor extends AbstractActor
 	}
 
 	final private Thread _thread;
-	final private Fun _init;
 }

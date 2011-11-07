@@ -15,13 +15,18 @@
 package actors;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import yeti.lang.FailureException;
 import yeti.lang.Fun;
 
-//FIXME _currentActor is never set!!!
+//TODO lifecycle of actors start/stop
+//TODO pool of threads policy
+//TODO hooks for actors creation and supervision
+//TODO hooks can be general or per API call (newActor)
+
 public final class Actors
 {
 	// Methods to bootstrap the system and create actors
@@ -39,23 +44,35 @@ public final class Actors
 		actor.start();
 	}
 	
-	static public long newActor(Fun receive)
+	static public long newActor(Fun init, Fun receive)
 	{
 		// First check that we are in an actor context (otherwise throw exception)
 		checkCurrent("newActor");
 		// Create new id and actor
 		long id = newId();
-		Actor actor = new ThreadActor(id, receive);
+		Actor actor = new ThreadActor(id, init, receive);
 		//FIXME all accesses to _actors should be synchronized!
 		_actors.put(id, actor);
 		actor.start();
 		return id;
 	}
-	
+
 	static public long newEdtActor(Fun receive)
 	{
 		//TODO
 		return -1;
+	}
+	
+	static public void shutdown()
+	{
+		Iterator<Map.Entry<Long, Actor>> i = _actors.entrySet().iterator();
+		while (i.hasNext())
+		{
+			Map.Entry<Long, Actor> entry = i.next();
+			entry.getValue().stop();
+			i.remove();
+		}
+		_bootstrapId = null;
 	}
 
 	// Messaging methods
@@ -92,7 +109,7 @@ public final class Actors
 
 	// Internal utility methods
 	//==========================
-	
+
 	static private Actor checkCurrent(String call)
 	{
 		Long id = _currentActor.get();

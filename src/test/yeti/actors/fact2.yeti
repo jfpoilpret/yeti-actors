@@ -1,0 +1,38 @@
+module actors.fact2;
+
+// Import actors API
+{bootstrap, shutdown, newActor, (!), self, reply, source, changeReceiver} = load actors;
+
+// Actor to compute partial factorials
+partialFact accum start end = 
+	if start >= end then accum else partialFact (accum * start) (start + 1) end fi;
+partialFactActor () = {
+		receive {start, end} = reply (partialFact 1 start end), init () = ()
+	};
+startPartialFactActor {start, end} =
+	(actor = newActor (partialFactActor ());
+	 actor ! {start, end};());
+
+// Bootstrap actor to compute a complete factorial
+maxn = 1000;
+factorialActor n = {
+		var results = [],
+		count = (n div maxn) + if (n % maxn) > 0 then 1 else 0 fi,
+
+		init () = 
+			size = n div count;
+			ranges = map (do i: {start = i * size + 1, end = min ((i + 1) * size) n} done) [0..count - 1];
+			for ranges startPartialFactActor,
+
+		receive part = 
+			results := part :: results;
+			if length results == count then
+				fact = fold (*) 1 results;
+				println "\(n)! = \(fact)";
+				shutdown ()
+			fi
+	};
+
+fact n =
+	bootstrap (factorialActor n);
+	
